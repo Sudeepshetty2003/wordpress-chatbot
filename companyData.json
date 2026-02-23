@@ -1,0 +1,14 @@
+{
+  "company_name": "ABC Technologies",
+  "about": "ABC Technologies is a software development company based in Bangalore.",
+  "services": [
+    "Web Development",
+    "Mobile App Development",
+    "AI Solutions"
+  ],
+  "contact": {
+    "email": "info@abctech.com",
+    "phone": "+91-9876543210"
+  },
+  "location": "Bangalore, India"
+}
