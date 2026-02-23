@@ -6,7 +6,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Safe JSON loading
+// Load company data safely
 let companyData = {};
 try {
   companyData = JSON.parse(fs.readFileSync("./companyData.json", "utf-8"));
@@ -15,16 +15,33 @@ try {
   console.error("Failed to load companyData.json:", err);
 }
 
-// Health check route (for Render)
+// Health check
 app.get("/", (req, res) => {
   res.send("Chatbot backend is running!");
 });
 
 // Chat route
 app.post("/chat", (req, res) => {
-  const userMessage = req.body.message.toLowerCase();
+  const userMessage = req.body.message.toLowerCase().trim();
 
-  const allowedKeywords = [
+  // 1️⃣ Casual conversation patterns
+  const greetings = ["hello", "hi", "hey", "good morning", "good afternoon"];
+  const howAreYou = ["how are you", "how's it going", "how do you do"];
+
+  for (let g of greetings) {
+    if (userMessage.includes(g)) {
+      return res.json({ reply: "Hello! How can I help you today?" });
+    }
+  }
+
+  for (let h of howAreYou) {
+    if (userMessage.includes(h)) {
+      return res.json({ reply: "I'm doing great! How about you?" });
+    }
+  }
+
+  // 2️⃣ Company-related keywords
+  const companyKeywords = [
     "about",
     "company",
     "service",
@@ -36,21 +53,24 @@ app.post("/chat", (req, res) => {
     "location"
   ];
 
-  const isRelated = allowedKeywords.some(word =>
+  const isCompanyRelated = companyKeywords.some(word =>
     userMessage.includes(word)
   );
 
-  if (!isRelated) {
+  if (!isCompanyRelated) {
     return res.json({
-      reply: "Sorry, I can only answer questions related to our company information."
+      reply:
+        "Sorry, I can only answer questions related to our company information."
     });
   }
 
-  // Handle service-related questions
+  // Service / offer / solution
   const serviceKeywords = ["service", "offer", "solution", "solutions"];
   if (serviceKeywords.some(k => userMessage.includes(k))) {
     return res.json({
-      reply: `We provide the following services: ${companyData.services.join(", ")}.`
+      reply: `We provide the following services: ${companyData.services.join(
+        ", "
+      )}.`
     });
   }
 
@@ -70,12 +90,10 @@ app.post("/chat", (req, res) => {
   }
 
   // Default about
-  return res.json({
-    reply: companyData.about
-  });
+  return res.json({ reply: companyData.about });
 });
 
-// Start server (must be at bottom)
+// Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
