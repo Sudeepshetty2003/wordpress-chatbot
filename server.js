@@ -30,13 +30,13 @@ app.post("/chat", (req, res) => {
 
   for (let g of greetings) {
     if (userMessage.includes(g)) {
-      return res.json({ reply: "Hello! How can I help you today?" });
+        return res.json({ reply: "Hello! 👋 How can I help you today?" });
     }
   }
 
   for (let h of howAreYou) {
     if (userMessage.includes(h)) {
-      return res.json({ reply: "I'm doing great! How about you?" });
+         return res.json({ reply: "I'm doing great! 😎 How about you?" });
     }
   }
 
@@ -68,9 +68,7 @@ app.post("/chat", (req, res) => {
   const serviceKeywords = ["service", "offer", "solution", "solutions"];
   if (serviceKeywords.some(k => userMessage.includes(k))) {
     return res.json({
-      reply: `We provide the following services: ${companyData.services.join(
-        ", "
-      )}.`
+      reply: `We provide the following services: ${companyData.services.join(", ")} 💻🤖📱.`
     });
   }
 
