@@ -28,42 +28,49 @@ function isCompanyRelated(question) {
 }
 
 app.post("/chat", (req, res) => {
-  const userMessage = req.body.message;
+  const userMessage = req.body.message.toLowerCase();
 
-  if (!isCompanyRelated(userMessage)) {
+  const allowedKeywords = [
+    "about",
+    "company",
+    "service",
+    "offer",
+    "solution",
+    "contact",
+    "email",
+    "phone",
+    "location"
+  ];
+
+  const isRelated = allowedKeywords.some(word =>
+    userMessage.includes(word)
+  );
+
+  if (!isRelated) {
     return res.json({
-      reply:
-        "Sorry, I can only answer questions related to our company information."
+      reply: "Sorry, I can only answer questions related to our company information."
     });
   }
 
-  const lowerMsg = userMessage.toLowerCase();
-
-  if (lowerMsg.includes("service")) {
+  if (userMessage.includes("service") || userMessage.includes("offer") || userMessage.includes("solution")) {
     return res.json({
-      reply: "Our services include: " + companyData.services.join(", ")
+      reply: `We provide the following services: ${companyData.services.join(", ")}.`
     });
   }
 
-  if (lowerMsg.includes("contact") || lowerMsg.includes("email")) {
+  if (userMessage.includes("contact") || userMessage.includes("email")) {
     return res.json({
-      reply: "You can contact us at " + companyData.contact.email
+      reply: `You can contact us at ${companyData.contact.email} or call ${companyData.contact.phone}.`
     });
   }
 
-  if (lowerMsg.includes("location")) {
+  if (userMessage.includes("location")) {
     return res.json({
-      reply: "We are located in " + companyData.location
+      reply: `We are located in ${companyData.location}.`
     });
   }
 
-  res.json({
+  return res.json({
     reply: companyData.about
   });
-});
-
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
 });
