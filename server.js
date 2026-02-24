@@ -3,22 +3,23 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
-const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ✅ 1. Load API Key
+// ===============================
+// 1️⃣ Load API Key
+// ===============================
 const API_KEY = process.env.GEMINI_API_KEY;
 
 if (!API_KEY) {
     console.error("❌ GEMINI_API_KEY is missing in environment variables.");
 }
 
-const genAI = new GoogleGenerativeAI(API_KEY);
-
-// ✅ 2. Load company data safely
+// ===============================
+// 2️⃣ Load Company Data
+// ===============================
 let companyInfo = "";
 
 try {
@@ -31,17 +32,16 @@ try {
         "ABC Technologies is a tech firm based in Bangalore specializing in Web, Mobile and AI solutions.";
 }
 
-// ✅ 3. Initialize model (stable version)
-const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-flash-latest", // safer than fixed version
-});
-
-// Health check
+// ===============================
+// 3️⃣ Health Check
+// ===============================
 app.get("/", (req, res) => {
     res.send("✅ Server is running properly.");
 });
 
-// ✅ 4. Chat endpoint
+// ===============================
+// 4️⃣ Chat Endpoint
+// ===============================
 app.post("/chat", async (req, res) => {
     const { message } = req.body;
 
@@ -50,7 +50,7 @@ app.post("/chat", async (req, res) => {
     }
 
     try {
-        // Build structured prompt each time (more stable)
+
         const prompt = `
 You are a helpful AI assistant for ABC Technologies.
 
@@ -58,34 +58,58 @@ Company Data:
 ${companyInfo}
 
 Instructions:
-- If the user question is about the company, answer using the company data above.
-- If the question is NOT about the company, answer normally like a general AI assistant.
+- If the question is about the company, answer using the company data.
+- If not, answer normally like a general AI assistant.
 - Be clear and helpful.
 
 User Question:
 ${message}
         `;
 
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const responseText = response.text();
+        const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    contents: [
+                        {
+                            parts: [{ text: prompt }]
+                        }
+                    ]
+                }),
+            }
+        );
 
-        return res.json({ reply: responseText });
+        const data = await response.json();
+
+        // 🔥 If Gemini returns error
+        if (!response.ok) {
+            console.error("🔥 Gemini API Error:", data);
+            return res.status(500).json({
+                reply: "⚠️ AI service error. Check server logs."
+            });
+        }
+
+        const reply =
+            data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+            "⚠️ No response generated.";
+
+        return res.json({ reply });
 
     } catch (error) {
-
-        console.error("🔥 FULL ERROR OBJECT:");
-        console.error(error);
-        console.error("🔥 ERROR MESSAGE:", error.message);
-        console.error("🔥 ERROR RESPONSE:", error.response?.data);
-
+        console.error("🔥 SERVER ERROR:", error);
         return res.status(500).json({
-            reply: "Internal error. Check server logs."
+            reply: "⚠️ Internal server error."
         });
     }
 });
 
-// Start server
+// ===============================
+// 5️⃣ Start Server
+// ===============================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
