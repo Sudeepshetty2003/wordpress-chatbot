@@ -7,48 +7,61 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 1. Initialize Gemini with your NEW API Key
-// Note: It's better to use process.env.GEMINI_API_KEY on Render for safety
-const API_KEY = "AIzaSyBrkvyvCZSy8Z7kFSoUcRMEwGHnmqN19AI";
+// ✅ 1. Use ENV variable (NEVER hardcode API key)
+const API_KEY = process.env.GEMINI_API_KEY;
+
+if (!API_KEY) {
+    console.error("❌ GEMINI_API_KEY is missing in environment variables.");
+}
+
 const genAI = new GoogleGenerativeAI(API_KEY);
 
-// 2. Load company data safely
+// ✅ 2. Load company data safely
 let companyInfo = "";
+
 try {
     const data = JSON.parse(fs.readFileSync("./companyData.json", "utf-8"));
     companyInfo = JSON.stringify(data);
-    console.log("Data loaded successfully.");
+    console.log("✅ Company data loaded.");
 } catch (err) {
-    console.error("Error loading JSON:", err.message);
-    companyInfo = "ABC Technologies is a tech firm based in Bangalore specializing in Web and AI.";
+    console.error("❌ Error loading companyData.json:", err.message);
+    companyInfo = "ABC Technologies is a tech firm based in Bangalore specializing in Web, Mobile and AI solutions.";
 }
 
-// 3. Configure the model with the system instruction
-const model = genAI.getGenerativeModel({ 
+// ✅ 3. Create model
+const model = genAI.getGenerativeModel({
     model: "gemini-1.5-flash",
-    systemInstruction: `You are a helpful AI assistant for ABC Technologies. 
-    Use this company data to answer questions: ${companyInfo}. 
-    If a question is not about the company, answer it politely like a general AI assistant.`
+    systemInstruction: `
+You are a helpful AI assistant for ABC Technologies.
+
+Use this company data to answer company-related questions:
+${companyInfo}
+
+If a question is NOT about the company,
+answer normally like a friendly AI assistant.
+
+Always be clear and helpful.
+`
 });
 
 // In-memory chat history
 let chatHistory = [];
 
-// Health check for Render deployment
+// Health check
 app.get("/", (req, res) => {
-    res.send("Server is up and running!");
+    res.send("✅ Server is running properly.");
 });
 
-// 4. Chat endpoint
+// ✅ 4. Chat endpoint
 app.post("/chat", async (req, res) => {
     const { message } = req.body;
-    
+
     if (!message) {
         return res.status(400).json({ error: "No message provided" });
     }
 
     try {
-        // Start chat with current history
+
         const chat = model.startChat({
             history: chatHistory,
         });
@@ -57,35 +70,51 @@ app.post("/chat", async (req, res) => {
         const response = await result.response;
         const responseText = response.text();
 
-        // Update history strictly following the required format
+        // Save history correctly
         chatHistory.push({
             role: "user",
             parts: [{ text: message }],
         });
+
         chatHistory.push({
             role: "model",
             parts: [{ text: responseText }],
         });
 
-        // Limit history to last 10 exchanges to keep requests fast
+        // Keep only last 10 exchanges
         if (chatHistory.length > 20) {
             chatHistory = chatHistory.slice(-20);
         }
 
-        res.json({ reply: responseText });
+        return res.json({ reply: responseText });
 
     } catch (error) {
-        console.error("Gemini API Error:", error.message);
-        
-        // If the error is a history mismatch, clear history and try once more
-        if (error.message.includes("400")) {
-            chatHistory = []; 
-            res.status(500).json({ reply: "I had a connection glitch. Please try typing that one more time!" });
-        } else {
-            res.status(500).json({ reply: "I'm having trouble thinking right now. Please check your API quota or connection." });
+
+        console.error("🔥 Gemini API Error FULL:", error);
+
+        // If quota exceeded or invalid key
+        if (error.message?.includes("API key") || error.message?.includes("quota")) {
+            return res.status(500).json({
+                reply: "⚠️ API key issue or quota exceeded. Please check your Gemini key."
+            });
         }
+
+        // If history mismatch
+        if (error.message?.includes("400")) {
+            chatHistory = [];
+            return res.status(500).json({
+                reply: "⚠️ Chat history reset. Please send your message again."
+            });
+        }
+
+        return res.status(500).json({
+            reply: "⚠️ AI service temporarily unavailable. Please try again."
+        });
     }
 });
 
+// Start server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+});
