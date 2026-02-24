@@ -1,98 +1,58 @@
 const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Load company data safely
-let companyData = {};
+// Initialize Gemini API (Get your key at aistudio.google.com)
+const genAI = new GoogleGenerativeAI("AIzaSyClEwusXpq1zJr8lBRakaA_OvExnUxfWms");
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+// Load company data to use as "Context"
+let companyInfo = "";
 try {
-  companyData = JSON.parse(fs.readFileSync("./companyData.json", "utf-8"));
-  console.log("companyData loaded:", companyData);
+    const data = JSON.parse(fs.readFileSync("./companyData.json", "utf-8"));
+    companyInfo = JSON.stringify(data);
 } catch (err) {
-  console.error("Failed to load companyData.json:", err);
+    console.error("Error loading JSON:", err);
 }
 
-// Health check
-app.get("/", (req, res) => {
-  res.send("Chatbot backend is running!");
-});
+// In-memory storage for chat history (Note: resets on server restart)
+let chatHistory = [];
 
-// Chat route
-app.post("/chat", (req, res) => {
-  const userMessage = req.body.message.toLowerCase().trim();
+app.post("/chat", async (req, res) => {
+    const userMessage = req.body.message;
 
-  // 1️⃣ Casual conversation patterns
-  const greetings = ["hello", "hi", "hey", "good morning", "good afternoon"];
-  const howAreYou = ["how are you", "how's it going", "how do you do"];
+    try {
+        // 1. Create a System Instruction so the AI knows about your company
+        const systemPrompt = `You are a helpful AI assistant for ABC Technologies. 
+        Use this company data to answer questions: ${companyInfo}. 
+        If a question is not about the company, answer it politely like a general AI.`;
 
-  for (let g of greetings) {
-    if (userMessage.includes(g)) {
-        return res.json({ reply: "Hello! 👋 How can I help you today?" });
+        // 2. Start or continue a chat session with history
+        const chat = model.startChat({
+            history: chatHistory,
+            systemInstruction: systemPrompt,
+        });
+
+        // 3. Send the message to Gemini
+        const result = await chat.sendMessage(userMessage);
+        const responseText = result.response.text();
+
+        // 4. Update history (Save both user and model messages)
+        chatHistory.push({ role: "user", parts: [{ text: userMessage }] });
+        chatHistory.push({ role: "model", parts: [{ text: responseText }] });
+
+        res.json({ reply: responseText });
+
+    } catch (error) {
+        console.error("Gemini API Error:", error);
+        res.status(500).json({ error: "Something went wrong with the AI." });
     }
-  }
-
-  for (let h of howAreYou) {
-    if (userMessage.includes(h)) {
-         return res.json({ reply: "I'm doing great! 😎 How about you?" });
-    }
-  }
-
-  // 2️⃣ Company-related keywords
-  const companyKeywords = [
-    "about",
-    "company",
-    "service",
-    "offer",
-    "solution",
-    "contact",
-    "email",
-    "phone",
-    "location"
-  ];
-
-  const isCompanyRelated = companyKeywords.some(word =>
-    userMessage.includes(word)
-  );
-
-  if (!isCompanyRelated) {
-    return res.json({
-      reply:
-        "Sorry, I can only answer questions related to our company information."
-    });
-  }
-
-  // Service / offer / solution
-  const serviceKeywords = ["service", "offer", "solution", "solutions"];
-  if (serviceKeywords.some(k => userMessage.includes(k))) {
-    return res.json({
-      reply: `We provide the following services: ${companyData.services.join(", ")} 💻🤖📱.`
-    });
-  }
-
-  // Contact info
-  const contactKeywords = ["contact", "email", "phone"];
-  if (contactKeywords.some(k => userMessage.includes(k))) {
-    return res.json({
-      reply: `You can contact us at ${companyData.contact.email} or call ${companyData.contact.phone}.`
-    });
-  }
-
-  // Location
-  if (userMessage.includes("location")) {
-    return res.json({
-      reply: `We are located in ${companyData.location}.`
-    });
-  }
-
-  // Default about
-  return res.json({ reply: companyData.about });
 });
 
-// Start server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+const PORT = 3000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
