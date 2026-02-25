@@ -1,14 +1,104 @@
 {
-  "company_name": "ABC Technologies",
-  "about": "ABC Technologies is a software development company based in Bangalore.",
-  "services": [
-    "Web Development",
-    "Mobile App Development",
-    "AI Solutions"
-  ],
-  "contact": {
-    "email": "info@abctech.com",
-    "phone": "+91-9876543210"
+  "company_profile": {
+    "legal_name": "Linksmart Technologies Private Limited",
+    "brand_name": "Linksmart Technologies",
+    "cin": "U74900KA2010PTC056266",
+    "incorporation_date": "2010-12-20",
+    "company_type": "Private Limited Company",
+    "status": "Active",
+    "headquarters": {
+      "city": "Bengaluru",
+      "state": "Karnataka",
+      "country": "India"
+    }
   },
-  "location": "Bangalore, India"
-}   
+
+  "leadership": [
+    {
+      "name": "Ashish Anand",
+      "designation": "Managing Director"
+    },
+    {
+      "name": "Vandana Anand",
+      "designation": "Director"
+    },
+    {
+      "name": "Ajay Goel",
+      "designation": "Director"
+    },
+    {
+      "name": "Balvinder Singh Kalsi",
+      "designation": "Director"
+    }
+  ],
+
+  "industry": {
+    "primary_domain": "Product Security and Anti-Counterfeiting Technology",
+    "secondary_domain": "Supply Chain Traceability and Packaging Intelligence"
+  },
+
+  "about": "Linksmart Technologies is an intellectual property-driven technology company focused on developing non-clonable product security and anti-counterfeiting solutions. The company specializes in securing high-value goods and complex supply chains through advanced authentication technologies.",
+
+  "core_technology": {
+    "technology_name": "smartDNA",
+    "description": "smartDNA is a patented, non-clonable security labeling technology that generates unique, tamper-evident signatures for each product. It enables authentication using smartphone-based scanning and automated digital verification systems.",
+    "key_features": [
+      "Non-clonable security labels",
+      "Tamper-evident technology",
+      "Unique digital fingerprint per label",
+      "Smartphone-based scanning and verification",
+      "Automated counterfeit detection",
+      "Physical and digital cloning resistance"
+    ]
+  },
+
+  "solutions": [
+    {
+      "solution_name": "Non-Clonable Security Labels",
+      "description": "Unique, trackable labels embedded with proprietary authentication patterns."
+    },
+    {
+      "solution_name": "Tamper-Evident Packaging",
+      "description": "Packaging solutions designed to detect tampering and prevent unauthorized reuse."
+    },
+    {
+      "solution_name": "Reusable Secure Packaging",
+      "description": "Security-enabled reusable packaging systems with verification layers."
+    },
+    {
+      "solution_name": "IP Licensing Model",
+      "description": "Licensing of proprietary smartDNA technology for enterprise integration."
+    }
+  ],
+
+  "use_cases": [
+    "Anti-counterfeiting protection",
+    "Warranty fraud prevention",
+    "Refill fraud detection",
+    "Product authentication",
+    "Supply chain traceability",
+    "Brand protection"
+  ],
+
+  "target_industries": [
+    "Pharmaceuticals",
+    "FMCG",
+    "Luxury Goods",
+    "Electronics",
+    "Automotive Components",
+    "Government Secure Documents"
+  ],
+
+  "business_model": {
+    "type": "Technology and Intellectual Property Licensing",
+    "deployment": [
+      "Enterprise integration",
+      "Hybrid on-premise + cloud verification",
+      "Mobile authentication systems"
+    ]
+  },
+
+  "digital_presence": {
+    "official_website": "https://www.linksmartdna.com"
+  }
+}
