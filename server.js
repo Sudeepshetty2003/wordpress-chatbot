@@ -1,83 +1,98 @@
-require("dotenv").config();
-
 const express = require("express");
 const cors = require("cors");
+const fs = require("fs");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-
-if (!OPENROUTER_API_KEY) {
-    console.error("❌ OPENROUTER_API_KEY missing in environment variables.");
+// Load company data safely
+let companyData = {};
+try {
+  companyData = JSON.parse(fs.readFileSync("./companyData.json", "utf-8"));
+  console.log("companyData loaded:", companyData);
+} catch (err) {
+  console.error("Failed to load companyData.json:", err);
 }
 
-// =======================
-// Health Check
-// =======================
+// Health check
 app.get("/", (req, res) => {
-    res.send("✅ AI Chatbot Server Running");
+  res.send("Chatbot backend is running!");
 });
 
-// =======================
-// Chat Endpoint
-// =======================
-app.post("/chat", async (req, res) => {
-    const { message } = req.body;
+// Chat route
+app.post("/chat", (req, res) => {
+  const userMessage = req.body.message.toLowerCase().trim();
 
-    if (!message) {
-        return res.status(400).json({ reply: "Message is required." });
+  // 1️⃣ Casual conversation patterns
+  const greetings = ["hello", "hi", "hey", "good morning", "good afternoon"];
+  const howAreYou = ["how are you", "how's it going", "how do you do"];
+
+  for (let g of greetings) {
+    if (userMessage.includes(g)) {
+        return res.json({ reply: "Hello! 👋 How can I help you today?" });
     }
+  }
 
-    try {
-        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                model: "mistralai/mistral-7b-instruct",
-                messages: [
-                    {
-                        role: "system",
-                        content: "You are a helpful AI assistant. Answer all user questions clearly and naturally."
-                    },
-                    {
-                        role: "user",
-                        content: message
-                    }
-                ]
-            })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            console.error("🔥 OpenRouter Error:", data);
-            return res.status(500).json({
-                reply: "⚠️ AI service error. Please try again."
-            });
-        }
-
-        const reply = data.choices?.[0]?.message?.content || "⚠️ No response generated.";
-
-        res.json({ reply });
-
-    } catch (error) {
-        console.error("🔥 SERVER ERROR:", error);
-        res.status(500).json({
-            reply: "⚠️ Internal server error."
-        });
+  for (let h of howAreYou) {
+    if (userMessage.includes(h)) {
+         return res.json({ reply: "I'm doing great! 😎 How about you?" });
     }
+  }
+
+  // 2️⃣ Company-related keywords
+  const companyKeywords = [
+    "about",
+    "company",
+    "service",
+    "offer",
+    "solution",
+    "contact",
+    "email",
+    "phone",
+    "location"
+  ];
+
+  const isCompanyRelated = companyKeywords.some(word =>
+    userMessage.includes(word)
+  );
+
+  if (!isCompanyRelated) {
+    return res.json({
+      reply:
+        "Sorry, I can only answer questions related to our company information."
+    });
+  }
+
+  // Service / offer / solution
+  const serviceKeywords = ["service", "offer", "solution", "solutions"];
+  if (serviceKeywords.some(k => userMessage.includes(k))) {
+    return res.json({
+      reply: `We provide the following services: ${companyData.services.join(", ")} 💻🤖📱.`
+    });
+  }
+
+  // Contact info
+  const contactKeywords = ["contact", "email", "phone"];
+  if (contactKeywords.some(k => userMessage.includes(k))) {
+    return res.json({
+      reply: `You can contact us at ${companyData.contact.email} or call ${companyData.contact.phone}.`
+    });
+  }
+
+  // Location
+  if (userMessage.includes("location")) {
+    return res.json({
+      reply: `We are located in ${companyData.location}.`
+    });
+  }
+
+  // Default about
+  return res.json({ reply: companyData.about });
 });
 
-// =======================
-// Start Server
-// =======================
+// Start server
 const PORT = process.env.PORT || 3000;
-
 app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
