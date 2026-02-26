@@ -165,69 +165,102 @@ app.post("/chat", (req, res) => {
     return res.json({ reply: "Please send a valid message." });
   }
 
-  const userMessage = req.body.message.toLowerCase().trim();
+  // Normalize input
+  let userMessage = req.body.message
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s]/g, "")      // remove symbols
+    .replace(/\s+/g, " ");            // normalize spaces
 
-  /* ========= Greeting Detection ========= */
+  /* ==============================
+     1️⃣ SMART GREETING DETECTION
+  =============================== */
 
-  const greetings = ["hello", "hi", "hey", "good morning", "good evening"];
-  if (greetings.some(g => userMessage.includes(g))) {
+  const greetingRegex = /^(hi+|hii+|hiii+|hello+|helo+|hlo+|hey+)/;
+
+  if (greetingRegex.test(userMessage)) {
     return res.json({
       reply: "Hello 👋 How can I assist you regarding Linksmart Technologies?"
     });
   }
 
-  /* ========= Direct Company Info ========= */
+  /* ==============================
+     2️⃣ HOW ARE YOU HANDLING
+  =============================== */
 
   if (
-    userMessage.includes("company profile") ||
-    userMessage.includes("legal name") ||
-    userMessage.includes("cin")
+    userMessage.includes("how are you") ||
+    userMessage.includes("are you fine") ||
+    userMessage.includes("how r u")
   ) {
     return res.json({
-      reply:
-        `Legal Name: ${companyData.company_profile.legal_name}\n` +
-        `CIN: ${companyData.company_profile.cin}\n` +
-        `Headquarters: ${companyData.company_profile.headquarters.city}, ${companyData.company_profile.headquarters.country}`
+      reply: "I'm functioning optimally and ready to assist you with information about Linksmart Technologies."
     });
   }
 
-  /* ========= Competitive Comparison ========= */
+  /* ==============================
+     3️⃣ STRONG ABOUT INTENT
+  =============================== */
 
   if (
-    userMessage.includes("compare") ||
-    userMessage.includes("better than") ||
-    userMessage.includes("difference between") ||
+    userMessage.includes("what is linksmart") ||
+    userMessage.includes("who is linksmart") ||
+    userMessage.includes("tell me about linksmart") ||
+    userMessage.includes("about linksmart") ||
+    userMessage.includes("company overview")
+  ) {
+    return res.json({
+      reply: companyData.about
+    });
+  }
+
+  /* ==============================
+     4️⃣ SMARTDNA DIRECT INTENT
+  =============================== */
+
+  if (userMessage.includes("smartdna") || userMessage.includes("smrtdna")) {
+    return res.json({
+      reply:
+        `${companyData.core_technology.technology_name} is ` +
+        companyData.core_technology.description
+    });
+  }
+
+  /* ==============================
+     5️⃣ COMPETITOR / QR / HOLOGRAM
+  =============================== */
+
+  if (
     userMessage.includes("qr") ||
-    userMessage.includes("hologram")
+    userMessage.includes("hologram") ||
+    userMessage.includes("better than") ||
+    userMessage.includes("compare") ||
+    userMessage.includes("difference")
   ) {
     return res.json({
       reply:
-        "Linksmart's smartDNA offers non-clonable physical + digital security. Unlike QR codes or holograms that can be copied, smartDNA generates a unique fingerprint per product unit, making duplication practically impossible."
+        "Unlike QR codes or holograms that can be copied or replicated, smartDNA provides a non-clonable physical + digital fingerprint for each individual product unit, making duplication practically impossible."
     });
   }
 
-  /* ========= Fuzzy Intelligent Matching ========= */
+  /* ==============================
+     6️⃣ FUZZY SEARCH FALLBACK
+  =============================== */
 
   const results = fuse.search(userMessage);
 
-  if (results.length > 0 && results[0].score < 0.45) {
-    return res.json({ reply: results[0].item.reply });
+  if (results.length > 0 && results[0].score < 0.6) {
+    return res.json({
+      reply: results[0].item.reply
+    });
   }
 
-  /* ========= Fallback ========= */
+  /* ==============================
+     7️⃣ FINAL FALLBACK
+  =============================== */
 
   return res.json({
     reply:
-      "I'm sorry, I couldn't understand that clearly. Please ask about smartDNA, anti-counterfeiting solutions, industries, leadership, or competitive advantages."
+      "I couldn't clearly understand that. Please ask about Linksmart Technologies, smartDNA, industries, leadership, or security solutions."
   });
-});
-
-/* =========================================
-   START SERVER
-========================================= */
-
-const PORT = 5000;
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
 });
